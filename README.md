@@ -1,1 +1,1 @@
-This is Can number Detection project
+This is Car number Detection project
