@@ -1,33 +1,35 @@
 #!/usr/bin/env python
 
-# In[1]:
-
 import cv2
 import boto3
-import open
 import matplotlib.pyplot as plt
 import re
 import os
 import requests
 import json
 import xmltodict
-
-
-# In[2]:
+from boto3 import Session
 
 carplate_haar_cascade = ( cv2.CascadeClassifier('./haarcascade_russian_plate_number.xml'))
+session = Session()
+credentials = session.get_credentials()
+# Credentials are refreshable, so accessing your access key / secret key
+# separately can lead to a race condition. Use this to get an actual matched
+# set.
+current_credentials = credentials.get_frozen_credentials()
 
+# I would not recommend actually printing these. Generally unsafe.
+print(current_credentials.access_key)
+print(current_credentials.secret_key)
+print(current_credentials.token)
 
 # Setup function to detect car plate
 def carplate_detect(image):
     carplate_overlay = image.copy() 
     carplate_rects = carplate_haar_cascade.detectMultiScale(carplate_overlay,scaleFactor=1.1, minNeighbors=3)
-    for x,y,w,h in carplate_rects: 
+    for x, y, w, h in carplate_rects:
         cv2.rectangle(carplate_overlay, (x,y), (x+w,y+h), (0,255,0), 5) 
         return carplate_overlay
-
-
-# In[3]:
 
 
 def carplate_extract(carplate_img_rgb):
@@ -42,7 +44,6 @@ def carplate_extract(carplate_img_rgb):
         
         # Function detects faces and returns the cropped face
         # If no face detected, it returns the input image
-    
         gray = cv2.cvtColor(carplate_img_rgb,cv2.COLOR_BGR2GRAY)
         carplate_crop = carplate_haar_cascade.detectMultiScale(gray, 1.3, 5)
     
@@ -56,10 +57,6 @@ def carplate_extract(carplate_img_rgb):
         return carplate_img
 
 
-# In[4]:
-
-
-
 # Enlarge image for further processing later on
 def enlarge_img(image, scale_percent):
     width = int(image.shape[1] * scale_percent / 100)
@@ -69,14 +66,11 @@ def enlarge_img(image, scale_percent):
     return resized_image
 
 
-# In[32]:
-
-
 def detected_number_plate(img):
     # Read car image and convert color to RGB
     carplate_img = cv2.imread('./user_car_Image/{}'.format(img))
     carplate_img_rgb = cv2.cvtColor(carplate_img, cv2.COLOR_BGR2RGB)
-    #plt.imshow(carplate_img_rgb)
+    plt.imshow(carplate_img_rgb)
 
     # Import Haar Cascade XML file for Russian car plate numbers
     carplate_haar_cascade = cv2.CascadeClassifier('./haarcascade_russian_plate_number.xml')
@@ -86,19 +80,17 @@ def detected_number_plate(img):
 
     # Display extracted car license plate image
     carplate_extract_img = carplate_extract(carplate_img_rgb)
-
     carplate_extract_img = enlarge_img(carplate_extract_img, 150)
-    #plt.imshow(carplate_extract_img)
+    plt.imshow(carplate_extract_img)
 
     cv2.imwrite("final_img.jpg", carplate_extract_img)
 
-    ACCESS_KEY ="********************"
-    SECRET_KEY = "*******************"
-    bucket="task8ml"
+    ACCESS_KEY =current_credentials.access_key
+    SECRET_KEY = current_credentials.secret_key
+    bucket="codewisperer"
     s3_file="car.png"
 
-    client_s3 = boto3.client('s3', aws_access_key_id=ACCESS_KEY,
-                      aws_secret_access_key=SECRET_KEY)
+    client_s3 = boto3.client('s3', aws_access_key_id=ACCESS_KEY, aws_secret_access_key=SECRET_KEY)
     client_s3.upload_file("final_img.jpg", bucket, s3_file)
 
 
@@ -127,15 +119,12 @@ def detected_number_plate(img):
 
 # In[33]:
 
-"""
-os.system("curl https://task8ml.s3.ap-south-1.amazonaws.com/user_file.png -O user_file.png")
+
+os.system("curl https://codewisperer.s3.us-west-2.amazonaws.com/user_file.png -O user_file.png")
 os.system("move user_file.png user_car_Image/")
 img = "user_file.png"
 final_detected_number_plate = detected_number_plate(img)
-print(final_detected_number_plate)"""
-
-
-# In[16]:
+print(final_detected_number_plate)
 
 def rto(final_detected_number_plate):
     try:
@@ -159,10 +148,3 @@ def rto(final_detected_number_plate):
     except:
         msg="Unable to retrieve vehicle information, plz \nprovide clear image"
         return(msg)
-
-
-# In[ ]:
-
-
-
-
