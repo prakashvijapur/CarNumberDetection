@@ -1,5 +1,7 @@
 from boto3 import Session
 from flask import Flask,redirect,url_for,render_template,request
+import cv2
+import urllib.request
 import os
 from werkzeug.utils import secure_filename
 import boto3
@@ -18,6 +20,7 @@ s3_file='user_file.png'
 # Import dependencies
 app = Flask(__name__)
 UPLOAD_FOLDER = 'static/cars'
+ 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 
@@ -47,4 +50,5 @@ def upload():
             return render_template("index.html", output = vehicle_info)
 
 if __name__ == '__main__':
+    #DEBUG is SET to TRUE. CHANGE FOR PROD
     app.run()
